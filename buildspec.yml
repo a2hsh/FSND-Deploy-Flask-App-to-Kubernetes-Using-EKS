@@ -1,9 +1,10 @@
 ---
 version: 0.2
 
-
 phases:
   install:
+    runtime-versions:
+      python: 3.7
     commands:
       - curl -sS -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/aws-iam-authenticator
       - curl -sS -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl
@@ -11,14 +12,14 @@ phases:
       - export PATH=$PWD/:$PATH
       - apt-get update && apt-get -y install jq python3-pip python3-dev && pip3 install --upgrade awscli
   pre_build:
-      commands:
-        - TAG="$REPOSITORY_NAME.$REPOSITORY_BRANCH.$ENVIRONMENT_NAME.$(date +%Y-%m-%d.%H.%M.%S).$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
-        - sed -i 's@CONTAINER_IMAGE@'"$REPOSITORY_URI:$TAG"'@' simple_jwt_api.yml
-        - $(aws ecr get-login --no-include-email)
-        - export KUBECONFIG=$HOME/.kube/config
-        - python3 -m pip install --upgrade pip
-        - python3 -m pip install -r requirements.txt
-        - python3 -m pytest test_main.py
+    commands:
+      - TAG="$REPOSITORY_NAME.$REPOSITORY_BRANCH.$ENVIRONMENT_NAME.$(date +%Y-%m-%d.%H.%M.%S).$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
+      - sed -i 's@CONTAINER_IMAGE@'"$REPOSITORY_URI:$TAG"'@' simple_jwt_api.yml
+      - $(aws ecr get-login --no-include-email)
+      - export KUBECONFIG=$HOME/.kube/config
+      - pip3 install --upgrade pip
+      - pip3 install -r requirements.txt
+      - pytest test_main.py
   build:
     commands:
       - docker build --tag $REPOSITORY_URI:$TAG .
@@ -38,7 +39,7 @@ phases:
       - ls
 artifacts:
   files: build.json
+
 env:
-  parameter-store:         
+  parameter-store:
     JWT_SECRET: JWT_SECRET
-    
